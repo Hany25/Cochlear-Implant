@@ -4,9 +4,10 @@ import scipy.signal as signal
 import matplotlib.pyplot as plt
 import os
 
-# --- USER SETTINGS ---
 FS_TARGET = 16000
-AUDIO_FILES = ["speech_male.wav", "speech_female.wav"]  # Replace with your actual files
+
+#will be multiple files, rn is just one sample
+AUDIO_FILES = ["recording-24s.wav"]
 
 
 # --- Helper functions ---
@@ -87,60 +88,59 @@ def envelope_extraction(filtered, fs, cutoff=400):
 
 # --- MAIN SCRIPT ---
 
-if __name__ == "__main__":
-    for filename in AUDIO_FILES:
-        print(f"\nProcessing: {filename}")
-        x, fs = read_and_prepare(filename, FS_TARGET)
-        outname = write_audio(filename, x, fs)
-        print(f"Saved mono/resampled audio as {outname}")
+for filename in AUDIO_FILES:
+    print(f"\nProcessing: {filename}")
+    x, fs = read_and_prepare(filename, FS_TARGET)
+    outname = write_audio(filename, x, fs)
+    print(f"Saved mono/resampled audio as {outname}")
 
-        # Plot waveform
-        plot_waveform(x, f"Waveform of {filename}", fs)
+    # Plot waveform
+    plot_waveform(x, f"Waveform of {filename}", fs)
 
-        # Generate and plot cosine
-        cosine, t = generate_cosine(fs, len(x) / fs, freq=1000)
-        plot_waveform(cosine[:int(fs / 500)], "Two cycles of 1 kHz cosine", fs)
+    # Generate and plot cosine
+    cosine, t = generate_cosine(fs, len(x) / fs, freq=1000)
+    plot_waveform(cosine[:int(fs / 500)], "Two cycles of 1 kHz cosine", fs)
 
-    # Example: run filterbank and envelope extraction on first file
-    if AUDIO_FILES:
-        x, fs = read_and_prepare(AUDIO_FILES[0], FS_TARGET)
-        N = 8  # number of bands
-        fb = design_filterbank(N, fs, 100, 8000, "fir", order=256)
+# Example: run filterbank and envelope extraction on first file
+if AUDIO_FILES:
+    x, fs = read_and_prepare(AUDIO_FILES[0], FS_TARGET)
+    N = 8  # number of bands
+    fb = design_filterbank(N, fs, 100, 8000, "fir", order=256)
 
-        filtered_signals = []
-        envelopes = []
+    filtered_signals = []
+    envelopes = []
 
-        for (b, a, f1, f2) in fb:
-            y = signal.lfilter(b, a, x)
-            env = envelope_extraction(y, fs)
-            filtered_signals.append(y)
-            envelopes.append(env)
+    for (b, a, f1, f2) in fb:
+        y = signal.lfilter(b, a, x)
+        env = envelope_extraction(y, fs)
+        filtered_signals.append(y)
+        envelopes.append(env)
 
-        # Plot lowest and highest band results
-        t = np.arange(len(x)) / fs
+    # Plot lowest and highest band results
+    t = np.arange(len(x)) / fs
 
-        plt.figure(figsize=(10, 6))
-        plt.subplot(2, 1, 1)
-        plt.plot(t, filtered_signals[0])
-        plt.title("Filtered Signal - Lowest Band")
-        plt.xlabel("Time [s]")
+    plt.figure(figsize=(10, 6))
+    plt.subplot(2, 1, 1)
+    plt.plot(t, filtered_signals[0])
+    plt.title("Filtered Signal - Lowest Band")
+    plt.xlabel("Time [s]")
 
-        plt.subplot(2, 1, 2)
-        plt.plot(t, filtered_signals[-1])
-        plt.title("Filtered Signal - Highest Band")
-        plt.xlabel("Time [s]")
-        plt.tight_layout()
-        plt.show()
+    plt.subplot(2, 1, 2)
+    plt.plot(t, filtered_signals[-1])
+    plt.title("Filtered Signal - Highest Band")
+    plt.xlabel("Time [s]")
+    plt.tight_layout()
+    plt.show()
 
-        plt.figure(figsize=(10, 6))
-        plt.subplot(2, 1, 1)
-        plt.plot(t, envelopes[0])
-        plt.title("Envelope - Lowest Band")
-        plt.xlabel("Time [s]")
+    plt.figure(figsize=(10, 6))
+    plt.subplot(2, 1, 1)
+    plt.plot(t, envelopes[0])
+    plt.title("Envelope - Lowest Band")
+    plt.xlabel("Time [s]")
 
-        plt.subplot(2, 1, 2)
-        plt.plot(t, envelopes[-1])
-        plt.title("Envelope - Highest Band")
-        plt.xlabel("Time [s]")
-        plt.tight_layout()
-        plt.show()
+    plt.subplot(2, 1, 2)
+    plt.plot(t, envelopes[-1])
+    plt.title("Envelope - Highest Band")
+    plt.xlabel("Time [s]")
+    plt.tight_layout()
+    plt.show()
