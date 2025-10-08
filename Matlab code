@@ -1,0 +1,71 @@
+function MTE252P1(audioFile)
+% Task 3 - Audio Processing Routine
+% ---------------------------------
+% Input: audioFile - string, path to an audio file (e.g., 'recording-24s.wav')
+% Output: plots and processed sound files
+% Requirements: Signal Processing Toolbox
+
+%% 3.1 Read audio file and find sampling rate
+[x, fs] = audioread(audioFile);
+fprintf('Original sampling rate: %.2f Hz\n', fs);
+
+%% 3.2 Check if stereo or mono, convert to mono if needed
+if size(x,2) == 2
+    disp('Stereo detected → converting to mono...');
+    x = mean(x, 2); % add the two channels (average)
+else
+    disp('Mono signal detected.');
+end
+
+%% 3.3 Play the sound
+disp('Playing the input sound...');
+sound(x, fs);
+pause(length(x)/fs + 1); % wait until playback ends
+
+%% 3.4 Write the sound to a new file
+newFile = 'output_mono.wav';
+audiowrite(newFile, x, fs);
+disp(['Mono audio saved as: ', newFile]);
+
+%% 3.5 Plot the sound waveform (vs sample number)
+figure;
+plot(x);
+xlabel('Sample Number');
+ylabel('Amplitude');
+title('Waveform of Input Sound');
+
+%% 3.6 Downsample to 16 kHz if needed
+target_fs = 16000;
+if fs ~= target_fs
+    disp(['Resampling from ', num2str(fs), ' Hz → ', num2str(target_fs), ' Hz']);
+    x_resampled = resample(x, target_fs, fs);
+    fs = target_fs;
+else
+    x_resampled = x;
+end
+
+%% 3.7 Generate 1 kHz cosine with same duration
+N = length(x_resampled);
+t = (0:N-1)/fs;
+f0 = 1000; % 1 kHz tone
+cosine_signal = cos(2*pi*f0*t)';
+
+% Play and plot
+disp('Playing 1 kHz cosine signal...');
+sound(cosine_signal, fs);
+pause(length(cosine_signal)/fs + 1);
+
+% Plot two cycles of cosine (for clarity)
+T = 1/f0;
+samples_per_cycle = round(T * fs);
+figure;
+plot(t(1:2*samples_per_cycle), cosine_signal(1:2*samples_per_cycle));
+xlabel('Time (s)');
+ylabel('Amplitude');
+title('1 kHz Cosine Wave (Two Cycles)');
+
+% Optional: save the cosine tone
+audiowrite('cosine_1kHz.wav', cosine_signal, fs);
+disp('1 kHz cosine sound saved as cosine_1kHz.wav');
+
+end
