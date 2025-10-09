@@ -11,7 +11,7 @@ fprintf('Original sampling rate: %.2f Hz\n', fs);
 % Check if converting to mono needed
 if size(x,2) == 2
     disp('Stereo detected → converting to mono...');
-    x = mean(audio, 2); 
+    x = mean(x, 2); 
 else
     disp('Mono signal detected.');
 end
@@ -66,4 +66,4 @@ title('1 kHz Cosine Wave (Two Cycles)');
 % Save the cosine tone
 audiowrite('cosine_1kHz.wav', cosine_signal, fs);
 
-end
+
