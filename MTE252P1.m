@@ -1,4 +1,5 @@
-function MTE252P1(audioFile)
+function [x_resampled, fs] = MTE252P1(audioFile)
+% Phase 1
 % Input: audio file filename
 % Output: plots (input sound and output cos) and sound files
 
@@ -53,15 +54,15 @@ plot(x);
 xlabel('Sample Number'); ylabel('Amplitude');
 title('Waveform of Input Sound');
 
-% Plot two cycles of cosine
-T = 1/f0; % Period
-samples_per_cycle = round(T * fs);
-figure;
-plot(t(1:2*samples_per_cycle), cos_signal(1:2*samples_per_cycle));
-xlabel('Time (s)'); ylabel('Amplitude');
-title('Cos Wave 1 kHz for Two Cycles');
-
-% Save the cosine tone
-audiowrite('cos_1kHz.wav', cos_signal, fs);
+% % Plot two cycles of cosine
+% T = 1/f0; % Period
+% samples_per_cycle = round(T * fs);
+% figure;
+% plot(t(1:2*samples_per_cycle), cos_signal(1:2*samples_per_cycle));
+% xlabel('Time (s)'); ylabel('Amplitude');
+% title('Cos Wave 1 kHz for Two Cycles');
+% 
+% % Save the cosine tone
+% audiowrite('cos_1kHz.wav', cos_signal, fs);
 
 end

@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 FS_TARGET = 16000  # target sample rate (Hz)
 
 def ensure_pcm_wav(filename):
-    """Ensure the input file is a readable PCM WAV. Convert if needed."""
+    """Ensures the input file is a readable PCM WAV. Convert if needed."""
     try:
         info = sf.info(filename)
         if info.format != "WAV" or "PCM" not in info.subtype:

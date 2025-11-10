@@ -7,19 +7,20 @@ function FilterBankPhase2(x, fs)
 % [x, fs] = MTE252P1('recording.wav');
 % MTE252P2(x, fs);
 
-% Filter bank design
+% Filter bank design parameters
 N = 8;  % Number of channels
-f_low = 100;
-f_high = 8000;
+f_low = 100; % Hz
+f_high = 7999; % 1 less than 8000 to stay within Nyquist bounds
 band_edges = logspace(log10(f_low), log10(f_high), N+1); % logarithmic spacing
+filter_order = 4;
 
 filters = cell(N,1);
 for i = 1:N
     f1 = band_edges(i);
     f2 = band_edges(i+1);
-    
-    % Design bandpass filter (4th-order Butterworth)
-    [b, a] = butter(4, [f1 f2]/(fs/2), 'bandpass');
+
+    % Bandpass filter - 4th-order Butterworth
+    [b, a] = butter(filter_order, [f1 f2]/(fs/2) , 'bandpass');
     filters{i} = struct('b', b, 'a', a, 'range', [f1 f2]); % Stores coefficients and bandrange
 end
 
@@ -46,11 +47,27 @@ rectified_signals = cellfun(@abs, filtered_signals, 'UniformOutput', false); % a
 
 % Envelope extraction
 fc = 400; % cutoff freq for lowpass
-[b_lp, a_lp] = butter(4, fc/(fs/2), 'low');
+norm_cutoff = fc / (fs/2); % normalize to Nyquist frequency
+
+[b_lp, a_lp] = butter(filter_order, norm_cutoff, 'low');
 
 envelopes = cell(N,1);
 for i = 1:N
-    envelopes{i} = filter(b_lp, a_lp, rectified_signals{i});
+    % recursive difference equation implementation
+    x_in = rectified_signals{i};
+    y_out = zeros(size(x_in));
+    for n = filter_order+1:length(x_in)
+        y_out(n) = b_lp(1)*x_in(n) ...
+                 + b_lp(2)*x_in(n-1) ...
+                 + b_lp(3)*x_in(n-2) ...
+                 + b_lp(4)*x_in(n-3) ...
+                 + b_lp(5)*x_in(n-4) ...
+                 - a_lp(2)*y_out(n-1) ...
+                 - a_lp(3)*y_out(n-2) ...
+                 - a_lp(4)*y_out(n-3) ...
+                 - a_lp(5)*y_out(n-4);
+    end
+    envelopes{i} = y_out;
 end
 
 % Plot envelopes of lowest and highest bands
@@ -64,7 +81,5 @@ subplot(2,1,2);
 plot(envelopes{N});
 title(sprintf('Envelope - Highest Band (%.0f–%.0f Hz)', filters{N}.range));
 xlabel('Samples'); ylabel('Amplitude');
-
-disp('Phase 2 completed successfully.');
 
 end
