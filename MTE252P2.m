@@ -1,4 +1,4 @@
-function FilterBankPhase2(x, fs)
+function ProcessPhase2and3(x, fs)
 % Phase 2
 % Input: x - preprocessed, resampled mono audio
 %        fs - sampling rate (e.g., 16 kHz)
@@ -81,5 +81,46 @@ subplot(2,1,2);
 plot(envelopes{N});
 title(sprintf('Envelope - Highest Band (%.0f–%.0f Hz)', filters{N}.range));
 xlabel('Samples'); ylabel('Amplitude');
+
+% PHASE 3
+% Determine center frequencies
+centers = zeros(N,1);
+for i = 1:N
+    centers(i) = sqrt(filters{i}.range(1) * filters{i}.range(2)); % Geometric mean
+end
+
+L = length(x);
+t = (0:L-1)'/fs;
+
+synth_channels = cell(N,1);
+
+for i = 1:N
+    carrier = cos(2*pi*centers(i)*t);   % cosine at channel freq
+    env = envelopes{i};
+    synth_channels{i} = carrier .* env; % amplitude modulation
+end
+
+% Add all the channels together
+y = zeros(L,1);
+for i = 1:N
+    y = y + synth_channels{i};
+end
+
+% Normalize signal
+maxAmp = max(abs(y));
+y = y / maxAmp;
+
+% Play and save output
+disp("Playing synthesized Phase 3 output...");
+sound(y, fs);
+pause(length(y)/fs + 0.5);
+
+audiowrite("Phase3_Output.wav", y, fs);
+disp("Saved as Phase3_Output.wav");
+
+% Plot comparison
+figure;
+subplot(2,1,1); plot(x); title("Input Waveform");
+subplot(2,1,2); plot(y); title("Phase 3 Output Waveform");
 
 end
