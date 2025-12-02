@@ -1,11 +1,11 @@
-function MTE252P2D4(x, fs)
+function MTE252P2D5(x, fs)
 % Phase 2
 % Input: x - preprocessed, resampled mono audio
 %        fs - sampling rate (e.g., 16 kHz)
 
 % Use via:
 % [x, fs] = MTE252P1('recording-24s.wav');
-% MTE252P2D4(x, fs);
+% MTE252P2D5(x, fs);
 
 % Filter bank design parameters
 N = 8;  % Number of channels
@@ -14,14 +14,21 @@ f_high = 7999; % less than 8000 to stay within Nyquist bounds
 band_edges = logspace(log10(f_low), log10(f_high), N+1); % logarithmic spacing
 filter_order = 4;
 
+overlap_frac = 0.15;  % 0.15 = 15% overlap of each band width
+
 filters = cell(N,1);
 for i = 1:N
     f1 = band_edges(i);
     f2 = band_edges(i+1);
 
     % Bandpass filter - 4th-order Butterworth
-    [b, a] = butter(filter_order, [f1 f2]/(fs/2) , 'bandpass');
-    filters{i} = struct('b', b, 'a', a, 'range', [f1 f2]); % Stores coefficients and bandrange
+    bw = f2 - f1;
+    f1_o = max(f1 - overlap_frac*bw/2, f_low);
+    f2_o = min(f2 + overlap_frac*bw/2, f_high);
+
+    % Bandpass filter - 4th-order Butterworth with overlap
+    [b, a] = butter(filter_order, [f1_o f2_o]/(fs/2), 'bandpass');
+    filters{i} = struct('b', b, 'a', a, 'range', [f1_o f2_o]); % Stores coefficients and bandrange
 end
 
 % Filter the signal
@@ -46,7 +53,7 @@ xlabel('Samples'); ylabel('Amplitude');
 rectified_signals = cellfun(@abs, filtered_signals, 'UniformOutput', false); % abs value rectification sample-wise
 
 % Envelope extraction
-fc = 800; % cutoff freq for lowpass
+fc = 400; % cutoff freq for lowpass
 norm_cutoff = fc / (fs/2); % normalize to Nyquist frequency
 
 [b_lp, a_lp] = butter(filter_order, norm_cutoff, 'low');
@@ -82,7 +89,7 @@ plot(envelopes{N});
 title(sprintf('Envelope - Highest Band (%.0f–%.0f Hz)', filters{N}.range));
 xlabel('Samples'); ylabel('Amplitude');
 
-% PHASE 3 - Fc = 800 Hz
+% PHASE 3 - log spacing
 % Determine center frequencies
 centers = zeros(N,1);
 for i = 1:N
@@ -109,6 +116,26 @@ end
 % Normalize signal
 maxAmp = max(abs(y));
 y = y / maxAmp;
+
+% Bonus task: quantitative comparison
+band_error = zeros(N,1);
+filtered_y = cell(N,1);
+for i = 1:N
+    filtered_y{i} = filter(filters{i}.b, filters{i}.a, y);
+
+    Ein  = sqrt(mean(filtered_signals{i}.^2)); % input band RMS
+    Eout = sqrt(mean(filtered_y{i}.^2)); % output band RMS
+
+    if Ein > 0
+        band_error(i) = abs(Eout - Ein) / Ein;
+    else
+        band_error(i) = 0;
+    end
+end
+
+overall_error = mean(band_error);
+similarity_pct = max(0, 1 - overall_error) * 100; % Outputs a percentage
+fprintf('Bonus Task: Similarity = %.1f%%\n', similarity_pct);
 
 % Play and save output
 disp("Playing synthesized Phase 3 output...");

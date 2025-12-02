@@ -1,14 +1,14 @@
-function MTE252P2D4(x, fs)
+function MTE252P2D4N32(x, fs)
 % Phase 2
 % Input: x - preprocessed, resampled mono audio
 %        fs - sampling rate (e.g., 16 kHz)
 
 % Use via:
 % [x, fs] = MTE252P1('recording-24s.wav');
-% MTE252P2D4(x, fs);
+% MTE252P2D4N32(x, fs);
 
 % Filter bank design parameters
-N = 8;  % Number of channels
+N = 32;  % Number of channels
 f_low = 100; % Hz
 f_high = 7999; % less than 8000 to stay within Nyquist bounds
 band_edges = logspace(log10(f_low), log10(f_high), N+1); % logarithmic spacing

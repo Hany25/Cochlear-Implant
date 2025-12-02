@@ -4,7 +4,7 @@ function MTE252P2D3(x, fs)
 %        fs - sampling rate (e.g., 16 kHz)
 
 % Use via:
-% [x, fs] = MTE252P1('recording-11s.wav');
+% [x, fs] = MTE252P1('recording-24s.wav');
 % MTE252P2D3(x, fs);
 
 % Filter bank design parameters
@@ -12,15 +12,17 @@ N = 8;  % Number of channels
 f_low = 100; % Hz
 f_high = 7999; % less than 8000 to stay within Nyquist bounds
 band_edges = logspace(log10(f_low), log10(f_high), N+1); % logarithmic spacing
-filter_order = 4;
+bp_order = 32; % FIR order
+lp_order = 4;
 
 filters = cell(N,1);
 for i = 1:N
     f1 = band_edges(i);
     f2 = band_edges(i+1);
 
-    % Bandpass filter - 4th-order Butterworth
-    [b, a] = fir1(filter_order, [f1 f2]/(fs/2)); % FIR filter
+    % Bandpass filter - 32 order FIR filter
+    b = fir1(bp_order, [f1 f2]/(fs/2)); % FIR filter
+    a = 1;
     filters{i} = struct('b', b, 'a', a, 'range', [f1 f2]); % Stores coefficients and bandrange
 end
 
@@ -49,14 +51,14 @@ rectified_signals = cellfun(@abs, filtered_signals, 'UniformOutput', false); % a
 fc = 400; % cutoff freq for lowpass
 norm_cutoff = fc / (fs/2); % normalize to Nyquist frequency
 
-[b_lp, a_lp] = butter(filter_order, norm_cutoff, 'low');
+[b_lp, a_lp] = butter(lp_order, norm_cutoff, 'low');
 
 envelopes = cell(N,1);
 for i = 1:N
     % recursive difference equation implementation
     x_in = rectified_signals{i};
     y_out = zeros(size(x_in));
-    for n = filter_order+1:length(x_in)
+    for n = lp_order+1:length(x_in)
         y_out(n) = b_lp(1)*x_in(n) ...
                  + b_lp(2)*x_in(n-1) ...
                  + b_lp(3)*x_in(n-2) ...
@@ -89,14 +91,22 @@ for i = 1:N
     centers(i) = sqrt(filters{i}.range(1) * filters{i}.range(2)); % Geometric mean since log spacing
 end
 
-L = length(x);
+L = length(envelopes{1});
 t = (0:L-1)'/fs; % make column vector for ease of use later
 
 synth_channels = cell(N,1);
 
 for i = 1:N
-    carrier = cos(2*pi*centers(i)*t);   % cosine at channel freq
+    carrier = cos(2*pi*centers(i)*t); % cosine at channel freq
+    
     env = envelopes{i};
+    env = env(:); % ensure column
+    if length(env) > L
+        env = env(1:L);
+    elseif length(env) < L
+        env = [env; zeros(L - length(env), 1)];
+    end
+
     synth_channels{i} = carrier .* env; % amplitude modulation
 end
 
@@ -108,8 +118,29 @@ end
 
 % Normalize signal
 maxAmp = max(abs(y));
-y = y / maxAmp;
+if maxAmp > 0 && isfinite(maxAmp)
+    y = y / maxAmp;
+end
 
+% Bonus task: quantitative comparison
+band_error = zeros(N,1);
+filtered_y = cell(N,1);
+for i = 1:N
+    filtered_y{i} = filter(filters{i}.b, filters{i}.a, y);
+
+    Ein  = sqrt(mean(filtered_signals{i}.^2)); % input band RMS
+    Eout = sqrt(mean(filtered_y{i}.^2)); % output band RMS
+
+    if Ein > 0
+        band_error(i) = abs(Eout - Ein) / Ein;
+    else
+        band_error(i) = 0;
+    end
+end
+
+overall_error = mean(band_error);
+similarity_pct = max(0, 1 - overall_error) * 100; % Outputs a percentage
+fprintf('Bonus Task: Similarity = %.1f%%\n', similarity_pct);
 % Play and save output
 disp("Playing synthesized Phase 3 output...");
 sound(y, fs);

@@ -4,7 +4,7 @@ function MTE252P2D1(x, fs)
 %        fs - sampling rate (e.g., 16 kHz)
 
 % Use via:
-% [x, fs] = MTE252P1('recording-11s.wav');
+% [x, fs] = MTE252P1('recording-24s.wav');
 % MTE252P2D1(x, fs);
 
 % Filter bank design parameters
@@ -110,6 +110,25 @@ end
 maxAmp = max(abs(y));
 y = y / maxAmp;
 
+% Bonus task: quantitative comparison
+band_error = zeros(N,1);
+filtered_y = cell(N,1);
+for i = 1:N
+    filtered_y{i} = filter(filters{i}.b, filters{i}.a, y);
+
+    Ein  = sqrt(mean(filtered_signals{i}.^2)); % input band RMS
+    Eout = sqrt(mean(filtered_y{i}.^2)); % output band RMS
+
+    if Ein > 0
+        band_error(i) = abs(Eout - Ein) / Ein;
+    else
+        band_error(i) = 0;
+    end
+end
+
+overall_error = mean(band_error);
+similarity_pct = max(0, 1 - overall_error) * 100; % Outputs a percentage
+fprintf('Bonus Task: Similarity = %.1f%%\n', similarity_pct);
 % Play and save output
 disp("Playing synthesized Phase 3 output...");
 sound(y, fs);

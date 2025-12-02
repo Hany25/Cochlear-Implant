@@ -15,8 +15,8 @@ end
 
 % Playing audio
 disp('Playing the input sound...');
-sound(x, fs);
-pause(length(x)/fs + 1); % Wait until playback ends
+% sound(x, fs);
+% pause(length(x)/fs + 1); % Wait until playback ends
 
 % Write a new file for the output sound
 newFile = 'output_mono.wav';
@@ -25,7 +25,7 @@ audiowrite(newFile, x, fs);
 % Downsampling 
 target_fs = 16000;
 if fs ~= target_fs
-    x_resampled = resampleAudio(x, target_fs, fs);
+    x_resampled = resampleAudio(x, fs, target_fs);
     fs = target_fs;
 else
     x_resampled = x;
@@ -45,8 +45,8 @@ cos_signal = cos(2*pi*f0*t)';
 
 % Play the signal
 disp('Playing 1 kHz cosine signal...');
-sound(cos_signal, fs);
-pause(length(cos_signal)/fs + 1);
+%sound(cos_signal, fs);
+%pause(length(cos_signal)/fs + 1);
 
 % Plot the audio 
 figure;

@@ -1,14 +1,14 @@
-function MTE252P2D4(x, fs)
+function MTE252P2D4N16(x, fs)
 % Phase 2
 % Input: x - preprocessed, resampled mono audio
 %        fs - sampling rate (e.g., 16 kHz)
 
 % Use via:
 % [x, fs] = MTE252P1('recording-24s.wav');
-% MTE252P2D4(x, fs);
+% MTE252P2D4N16(x, fs);
 
 % Filter bank design parameters
-N = 8;  % Number of channels
+N = 16;  % Number of channels
 f_low = 100; % Hz
 f_high = 7999; % less than 8000 to stay within Nyquist bounds
 band_edges = logspace(log10(f_low), log10(f_high), N+1); % logarithmic spacing
@@ -109,6 +109,26 @@ end
 % Normalize signal
 maxAmp = max(abs(y));
 y = y / maxAmp;
+
+% Bonus task: quantitative comparison
+band_error = zeros(N,1);
+filtered_y = cell(N,1);
+for i = 1:N
+    filtered_y{i} = filter(filters{i}.b, filters{i}.a, y);
+
+    Ein  = sqrt(mean(filtered_signals{i}.^2)); % input band RMS
+    Eout = sqrt(mean(filtered_y{i}.^2)); % output band RMS
+
+    if Ein > 0
+        band_error(i) = abs(Eout - Ein) / Ein;
+    else
+        band_error(i) = 0;
+    end
+end
+
+overall_error = mean(band_error);
+similarity_pct = max(0, 1 - overall_error) * 100; % Outputs a percentage
+fprintf('Bonus Task: Similarity = %.1f%%\n', similarity_pct);
 
 % Play and save output
 disp("Playing synthesized Phase 3 output...");
