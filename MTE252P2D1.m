@@ -1,16 +1,16 @@
-function ProcessPhase2and3(x, fs)
+function MTE252P2D1(x, fs)
 % Phase 2
 % Input: x - preprocessed, resampled mono audio
 %        fs - sampling rate (e.g., 16 kHz)
 
 % Use via:
-% [x, fs] = MTE252P1('recording.wav');
-% MTE252P2(x, fs);
+% [x, fs] = MTE252P1('recording-11s.wav');
+% MTE252P2D1(x, fs);
 
 % Filter bank design parameters
 N = 8;  % Number of channels
 f_low = 100; % Hz
-f_high = 7999; % 1 less than 8000 to stay within Nyquist bounds
+f_high = 7999; % less than 8000 to stay within Nyquist bounds
 band_edges = logspace(log10(f_low), log10(f_high), N+1); % logarithmic spacing
 filter_order = 4;
 
@@ -82,15 +82,15 @@ plot(envelopes{N});
 title(sprintf('Envelope - Highest Band (%.0f–%.0f Hz)', filters{N}.range));
 xlabel('Samples'); ylabel('Amplitude');
 
-% PHASE 3
+% PHASE 3 - log spacing
 % Determine center frequencies
 centers = zeros(N,1);
 for i = 1:N
-    centers(i) = sqrt(filters{i}.range(1) * filters{i}.range(2)); % Geometric mean
+    centers(i) = sqrt(filters{i}.range(1) * filters{i}.range(2)); % Geometric mean since log spacing
 end
 
 L = length(x);
-t = (0:L-1)'/fs;
+t = (0:L-1)'/fs; % make column vector for ease of use later
 
 synth_channels = cell(N,1);
 
